@@ -82,31 +82,39 @@ randPointsWeighted' g n points current = do
         distancesSum = foldl (+) 0 pointsDistances
         (num, newG) = next g
         searchNum = (fromIntegral ((abs num) `mod` 1000) :: Float) / 1000 * distancesSum
-        position = getPos searchNum pointsDistances (-1) --fix here
+        position = getPos searchNum pointsDistances 0
         chosen = points!!position
 
 getPos :: Float -> [Float] -> Int -> Int
 getPos _ [a] curr = curr
-getPos sum dists curr = if sum <= 0 then curr
-                                   else getPos (sum - head dists) (tail dists) (curr + 1)
+getPos sum dists curr = if sum < 0 then curr - 1
+                                    else getPos (sum - head dists) (tail dists) (curr + 1)
 
 clusterizeSimple numClusters points = mapping
-  where --points = [[1], [2], [2.2], [2.3], [3], [4], [4.1], [5], [5.5], [6]]
+  where
         initCenters = randPoints 42 numClusters points
         mapping = kMeans initCenters points
 
 clusterizeWeighted numClusters points = mapping
-  where --points = [[1], [2], [2.2], [2.3], [3], [4], [4.1], [5], [5.5], [6]]
+  where
         initCenters = randPointsWeighted 42 numClusters points
         mapping = kMeans initCenters points
 
+showListSpace :: Show a => [a] -> String
+showListSpace [] = ""
+showListSpace [h] = show h
+showListSpace (h:t) = show h ++ " " ++ (showListSpace t)
 
-convert :: Int -> [Point] -> ClustersMap
-convert numClusters points = clusterizeWeighted numClusters points
+printClusters :: ClustersMap -> IO ()
+printClusters clusters = do
+  mapM_ (\x -> do
+              putStrLn $ (show $ fst x) ++ " " ++ (show . length $ snd x)
+              mapM_ (putStrLn . showListSpace) $ snd x) $ M.toList clusters
 
 main = do
   nPoints <- getLine
   numClusters <- getLine
   points <- replicateM (read nPoints) getLine
   pointsList <- return $ map (\x -> map (\x -> read x :: Float) $ words x) points
-  putStrLn $ show $ convert (read numClusters) pointsList
+  clusters <- return $ clusterizeWeighted (read numClusters) pointsList
+  printClusters clusters
