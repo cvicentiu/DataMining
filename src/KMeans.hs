@@ -114,7 +114,9 @@ printClusters clusters = do
 main = do
   nPoints <- getLine
   numClusters <- getLine
+  weights <- getLine
+  weightsList <- return $ map (\x -> read x :: Float) $ words weights
   points <- replicateM (read nPoints) getLine
-  pointsList <- return $ map (\x -> map (\x -> read x :: Float) $ words x) points
+  pointsList <- return $ map (\x -> zipWith (*) weightsList $ map (\x -> read x :: Float) $ words x) points
   clusters <- return $ clusterizeWeighted (read numClusters) pointsList
   printClusters clusters
